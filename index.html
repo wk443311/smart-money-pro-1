@@ -35,34 +35,25 @@
       transition: all 0.2s; width: 100%; max-width: 300px;
     }
     .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-primary { background: linear-gradient(135deg, #fa709a, #fee140); color: white; }
-    .btn-success { background: linear-gradient(135deg, #28a745, #20c997); color: white; display: none; }
     .hidden { display: none !important; }
     #ad-status { margin-top: 16px; font-weight: 500; min-height: 24px; padding: 8px 12px; border-radius: 8px; }
     .error { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
-    .success { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+    
     .warning-modal {
       display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;
-      animation: fadeIn 0.3s ease;
     }
     .warning-modal.show { display: flex; }
     .warning-content {
       background: #fff; padding: 32px 24px; border-radius: 16px;
       max-width: 400px; width: 90%; text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: slideDown 0.3s ease;
     }
-    .warning-icon { font-size: 3rem; margin-bottom: 16px; }
-    .warning-title { font-size: 1.3rem; font-weight: 700; color: #c53030; margin-bottom: 12px; }
-    .warning-message { color: #4a5568; margin-bottom: 24px; line-height: 1.5; white-space: pre-line; }
     .warning-btn {
       background: linear-gradient(135deg, #fa709a, #fee140); color: white;
-      border: none; padding: 12px 32px; border-radius: 10px;
-      font-size: 1rem; font-weight: 600; cursor: pointer;
+      border: none; padding: 12px 32px; border-radius: 10px; font-weight: 600; cursor: pointer;
     }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -71,9 +62,9 @@
 
   <div class="warning-modal" id="warningModal">
     <div class="warning-content">
-      <div class="warning-icon">⚠️</div>
-      <div class="warning-title">সতর্কতা</div>
-      <div class="warning-message" id="warningMessage"></div>
+      <div style="font-size: 3rem; margin-bottom: 16px;">⚠️</div>
+      <div style="font-size: 1.3rem; font-weight: 700; color: #c53030; margin-bottom: 12px;">সতর্কতা</div>
+      <div id="warningMessage"></div>
       <button class="warning-btn" onclick="closeWarning()">ঠিক আছে</button>
     </div>
   </div>
@@ -91,30 +82,19 @@
       বিজ্ঞাপন লোড হচ্ছে...
     </div>
     
-    <button class="btn btn-success" id="unlocked-btn">✅ সফলভাবে আনলক হয়েছে!</button>
-    
     <div id="ad-status"></div>
   </div>
 
-  <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-
   <script>
     const BLOCK_ID = "int-32886";
-    const NEXT_PAGE = "https://t.me/hot_exposedlink_jshuduEBssd_bot/app"; // বা আপনার Telegram Mini App লিংক ৪
-    const MIN_WATCH_SEC = 9;
-    const AUTO_REDIRECT_SEC = 12;
+    const NEXT_PAGE = "https://t.me/hot_exposedlink_jshuduEBssd_bot/app"; 
+    const MIN_WATCH_SEC = 8; 
 
     const watchAdBtn = document.getElementById('watch-ad-btn');
     const loadingAd = document.getElementById('loading-ad');
-    const unlockedBtn = document.getElementById('unlocked-btn');
     const adStatus = document.getElementById('ad-status');
     const warningModal = document.getElementById('warningModal');
     const warningMessage = document.getElementById('warningMessage');
-
-    let adWatched = false;
-    let AdController = null;
-    let adStartTime = null;
-    let autoRedirectTimer = null;
 
     function triggerAdWarning(message) {
       adStatus.textContent = message;
@@ -123,59 +103,50 @@
       warningModal.classList.add('show');
     }
 
-    function closeWarning() { warningModal.classList.remove('show'); }
-    warningModal.addEventListener('click', (e) => { if (e.target === warningModal) closeWarning(); });
+    function closeWarning() {
+      warningModal.classList.remove('show');
+      watchAdBtn.classList.remove('hidden');
+      loadingAd.classList.add('hidden');
+    }
 
-    function showAdsGramAd() {
-      if (adWatched) return;
-      try { AdController = window.Adsgram.init({ blockId: BLOCK_ID }); }
-      catch (initError) { triggerAdWarning("AdsGram লোড হয়নি। দয়া করে Ad Blocker বন্ধ করুন।"); return; }
+    function showAdsGramAd(isAuto = false) {
+      if (typeof window.Adsgram === 'undefined') return;
 
-      watchAdBtn.classList.add('hidden');
-      loadingAd.classList.remove('hidden');
-      adStatus.textContent = ''; adStatus.className = '';
-      adStartTime = Date.now();
+      const AdController = window.Adsgram.init({ blockId: BLOCK_ID });
+      
+      if (!isAuto) {
+        watchAdBtn.classList.add('hidden');
+        loadingAd.classList.remove('hidden');
+        adStatus.textContent = '';
+        adStatus.className = '';
+      }
 
-      autoRedirectTimer = setTimeout(() => {
-        if (!adWatched) {
-          adWatched = true;
-          adStatus.textContent = "⏱️ সময় শেষ! পরবর্তী পেজে যাচ্ছে...";
-          adStatus.className = 'success';
-          setTimeout(() => { window.location.href = NEXT_PAGE; }, 500);
-        }
-      }, AUTO_REDIRECT_SEC * 1000);
+      const adStartTime = Date.now();
 
       AdController.show()
-        .then((result) => {
-          clearTimeout(autoRedirectTimer);
+        .then(() => {
           const watchDuration = (Date.now() - adStartTime) / 1000;
-          if (watchDuration < MIN_WATCH_SEC) {
+          if (watchDuration >= MIN_WATCH_SEC) {
+            window.location.href = NEXT_PAGE;
+          } else if (!isAuto) {
             loadingAd.classList.add('hidden');
             watchAdBtn.classList.remove('hidden');
-            triggerAdWarning(`⚠️ বিজ্ঞাপন খুব তাড়াতাড়ি বন্ধ করা হয়েছে!\nঅনুগ্রহ করে অন্তত ${MIN_WATCH_SEC} সেকেন্ড দেখুন।`);
-            adStartTime = null; return;
+            triggerAdWarning(`⚠️ অন্তত ${MIN_WATCH_SEC} সেকেন্ড বিজ্ঞাপন দেখুন।`);
           }
-          loadingAd.classList.add('hidden');
-          adWatched = true;
-          adStatus.textContent = "✅ বিজ্ঞাপন সম্পন্ন! পরবর্তী পেজে যাচ্ছে...";
-          adStatus.className = 'success';
-          setTimeout(() => { window.location.href = NEXT_PAGE; }, 800);
         })
-        .catch((error) => {
-          clearTimeout(autoRedirectTimer);
-          loadingAd.classList.add('hidden');
-          watchAdBtn.classList.remove('hidden');
-          const errorMsg = error?.message || "কোনো বিজ্ঞাপন পাওয়া যায়নি বা লোড হয়নি";
-          triggerAdWarning(errorMsg);
-          adStartTime = null;
+        .catch(() => {
+          if (!isAuto) {
+            loadingAd.classList.add('hidden');
+            watchAdBtn.classList.remove('hidden');
+            triggerAdWarning("বিজ্ঞাপন লোড হয়নি। আবার চেষ্টা করুন।");
+          }
         });
     }
 
-    watchAdBtn.addEventListener('click', showAdsGramAd);
+    watchAdBtn.addEventListener('click', () => showAdsGramAd(false));
+
     window.addEventListener('load', () => {
-      if (typeof window.Adsgram === 'undefined') {
-        triggerAdWarning("AdsGram SDK লোড হয়নি। দয়া করে Ad Blocker বন্ধ করুন।");
-      }
+      showAdsGramAd(true); 
     });
   </script>
 
